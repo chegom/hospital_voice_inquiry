@@ -1,0 +1,292 @@
+/**
+ * Voice Consultation Widget
+ * 웹페이지 중앙에 고정되는 AI 음성 상담 위젯
+ */
+
+// ========== 설정 ==========
+const CONFIG = {
+    // AI 에이전트 ID (필수)
+    AGENT_ID: 'agent_6501kftgxk6ne81sr01rj0f7q5mc',
+
+    // 웹훅 URL (선택사항 - 대화 내용 전송)
+    WEBHOOK_URL: ''
+};
+
+class VoiceWidget {
+    constructor(config) {
+        this.config = config;
+        this.conversation = null;
+        this.isActive = false;
+        this.conversationHistory = [];
+
+        this.init();
+    }
+
+    init() {
+        this.createWidget();
+        this.attachEventListeners();
+    }
+
+    createWidget() {
+        // 위젯 컨테이너 생성
+        const widgetContainer = document.createElement('div');
+        widgetContainer.id = 'ai-voice-widget';
+        widgetContainer.innerHTML = `
+            <div class="voice-widget-container">
+                <div class="voice-widget-header">
+                    <h2>🏥 든든한 서울 내과</h2>
+                    <p class="subtitle">AI 상담 간호사 '건강이'</p>
+                    <p class="description">진료 예약, 병원 이용, 건강 관련 질문을 도와드립니다</p>
+                </div>
+
+                <div class="voice-widget-content">
+                    <button id="voice-widget-button" class="voice-widget-btn" aria-label="음성 상담 시작/종료">
+                        <svg class="microphone-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 1C10.34 1 9 2.34 9 4V12C9 13.66 10.34 15 12 15C13.66 15 15 13.66 15 12V4C15 2.34 13.66 1 12 1Z" fill="currentColor"/>
+                            <path d="M17 12C17 14.76 14.76 17 12 17C9.24 17 7 14.76 7 12H5C5 15.53 7.61 18.43 11 18.92V23H13V18.92C16.39 18.43 19 15.53 19 12H17Z" fill="currentColor"/>
+                        </svg>
+                        <svg class="stop-icon" style="display: none;" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor"/>
+                        </svg>
+                    </button>
+
+                    <div class="status-container">
+                        <div id="voice-widget-status" class="voice-widget-status">
+                            <div class="status-indicator"></div>
+                            <span class="status-text">대기 중</span>
+                        </div>
+                    </div>
+
+                    <div id="conversation-log" class="conversation-log" style="display: none;">
+                        <div class="log-header">대화 내역</div>
+                        <div id="conversation-messages" class="conversation-messages"></div>
+                    </div>
+                </div>
+
+                <div class="voice-widget-footer">
+                    <small>AI Voice Assistant</small>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(widgetContainer);
+    }
+
+    attachEventListeners() {
+        const button = document.getElementById('voice-widget-button');
+        button.addEventListener('click', () => this.toggleConversation());
+    }
+
+    async toggleConversation() {
+        if (this.isActive) {
+            await this.stopConversation();
+        } else {
+            await this.startConversation();
+        }
+    }
+
+    async startConversation() {
+        try {
+            // Agent ID 확인
+            if (!this.config.AGENT_ID || this.config.AGENT_ID === 'YOUR_AGENT_ID_HERE') {
+                alert('⚠️ 에이전트 ID를 설정해주세요.\n\nwidget.js 파일에서 AGENT_ID를 입력하세요.');
+                return;
+            }
+
+            this.updateUI('connecting');
+
+            // AI SDK 로드
+            const { Conversation } = await import('https://cdn.jsdelivr.net/npm/@11labs/client/+esm');
+
+            this.conversation = await Conversation.startSession({
+                agentId: this.config.AGENT_ID,
+
+                // 대화 이벤트 핸들러
+                onConnect: () => {
+                    console.log('AI 상담 연결 성공');
+                    this.updateUI('connected');
+                    this.showConversationLog();
+                },
+
+                onDisconnect: () => {
+                    console.log('AI 상담 연결 종료');
+                    this.updateUI('disconnected');
+                },
+
+                onMessage: (message) => {
+                    console.log('메시지:', message);
+                    this.handleMessage(message);
+                },
+
+                onError: (error) => {
+                    console.error('오류:', error);
+                    this.updateUI('error');
+                    alert('연결 중 오류가 발생했습니다: ' + error.message);
+                }
+            });
+
+            this.isActive = true;
+
+        } catch (error) {
+            console.error('대화 시작 오류:', error);
+            this.updateUI('error');
+            alert('음성 상담을 시작할 수 없습니다.\n\n' + error.message);
+        }
+    }
+
+    async stopConversation() {
+        try {
+            if (this.conversation) {
+                await this.conversation.endSession();
+                this.conversation = null;
+            }
+
+            this.isActive = false;
+            this.updateUI('disconnected');
+
+            // 웹훅으로 대화 내용 전송
+            if (this.config.WEBHOOK_URL && this.conversationHistory.length > 0) {
+                this.sendToWebhook();
+            }
+
+        } catch (error) {
+            console.error('대화 종료 오류:', error);
+        }
+    }
+
+    handleMessage(message) {
+        // 대화 내용 저장
+        const messageData = {
+            timestamp: new Date().toISOString(),
+            type: message.type,
+            content: message.message || message.text || '',
+            speaker: message.source || 'unknown'
+        };
+
+        this.conversationHistory.push(messageData);
+
+        // 대화 로그에 표시
+        this.addMessageToLog(messageData);
+
+        // 콘솔에 메시지 출력
+        console.log(`[${message.source}]:`, message.message || message.text);
+    }
+
+    showConversationLog() {
+        const conversationLog = document.getElementById('conversation-log');
+        conversationLog.style.display = 'block';
+    }
+
+    addMessageToLog(messageData) {
+        const messagesContainer = document.getElementById('conversation-messages');
+        const messageElement = document.createElement('div');
+        messageElement.className = `message ${messageData.speaker}`;
+
+        const time = new Date(messageData.timestamp).toLocaleTimeString('ko-KR');
+        messageElement.innerHTML = `
+            <div class="message-header">
+                <span class="speaker">${messageData.speaker === 'user' ? '사용자' : 'AI'}</span>
+                <span class="time">${time}</span>
+            </div>
+            <div class="message-content">${messageData.content || '(음성 입력)'}</div>
+        `;
+
+        messagesContainer.appendChild(messageElement);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    async sendToWebhook() {
+        try {
+            const response = await fetch(this.config.WEBHOOK_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    sessionId: Date.now(),
+                    timestamp: new Date().toISOString(),
+                    conversation: this.conversationHistory,
+                    metadata: {
+                        userAgent: navigator.userAgent,
+                        url: window.location.href
+                    }
+                })
+            });
+
+            if (response.ok) {
+                console.log('대화 내용이 전송되었습니다.');
+                this.addSystemMessage('대화 내용이 저장되었습니다.');
+            }
+        } catch (error) {
+            console.error('웹훅 전송 오류:', error);
+        }
+    }
+
+    addSystemMessage(text) {
+        const messagesContainer = document.getElementById('conversation-messages');
+        const messageElement = document.createElement('div');
+        messageElement.className = 'message system';
+        messageElement.innerHTML = `<div class="message-content">${text}</div>`;
+        messagesContainer.appendChild(messageElement);
+    }
+
+    updateUI(state) {
+        const button = document.getElementById('voice-widget-button');
+        const status = document.getElementById('voice-widget-status');
+        const micIcon = button.querySelector('.microphone-icon');
+        const stopIcon = button.querySelector('.stop-icon');
+        const statusText = status.querySelector('.status-text');
+        const statusIndicator = status.querySelector('.status-indicator');
+
+        switch(state) {
+            case 'connecting':
+                button.classList.add('active');
+                statusText.textContent = '연결 중...';
+                statusIndicator.className = 'status-indicator connecting';
+                micIcon.style.display = 'none';
+                stopIcon.style.display = 'block';
+                break;
+
+            case 'connected':
+                button.classList.add('active', 'pulsing');
+                statusText.textContent = '음성 상담 중';
+                statusIndicator.className = 'status-indicator connected';
+                break;
+
+            case 'disconnected':
+                button.classList.remove('active', 'pulsing');
+                statusText.textContent = '대기 중';
+                statusIndicator.className = 'status-indicator';
+                micIcon.style.display = 'block';
+                stopIcon.style.display = 'none';
+                document.getElementById('conversation-log').style.display = 'none';
+                document.getElementById('conversation-messages').innerHTML = '';
+                this.conversationHistory = [];
+                break;
+
+            case 'error':
+                button.classList.remove('active', 'pulsing');
+                statusText.textContent = '오류 발생';
+                statusIndicator.className = 'status-indicator error';
+                setTimeout(() => {
+                    statusText.textContent = '대기 중';
+                    statusIndicator.className = 'status-indicator';
+                    micIcon.style.display = 'block';
+                    stopIcon.style.display = 'none';
+                }, 3000);
+                break;
+        }
+    }
+}
+
+// 페이지 로드 시 위젯 초기화
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        new VoiceWidget(CONFIG);
+    });
+} else {
+    new VoiceWidget(CONFIG);
+}
+
+// 전역 export
+window.VoiceWidget = VoiceWidget;

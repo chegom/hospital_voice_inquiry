@@ -1,0 +1,15 @@
+{
+  "name": "elevenlabs-voice-widget",
+  "version": "1.0.0",
+  "description": "ElevenLabs AI Voice Consultation Widget for Web",
+  "main": "widget.js",
+  "scripts": {
+    "dev": "npx http-server -p 8080 -o"
+  },
+  "keywords": ["elevenlabs", "voice", "ai", "widget", "conversational-ai"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@11labs/client": "^0.1.0"
+  }
+}
