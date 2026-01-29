@@ -23,6 +23,7 @@ class VoiceWidget {
         this.maxDuration = 180; // 3분 (초 단위)
         this.maxUsageCount = 2; // 최대 사용 횟수
         this.usageCount = this.getUsageCount();
+        this.hasIncrementedUsage = false; // 사용 횟수 증가 플래그
 
         this.init();
     }
@@ -127,7 +128,10 @@ class VoiceWidget {
         if (this.isActive) {
             await this.stopConversation();
         } else {
-            await this.startConversation();
+            // 이미 종료된 상태가 아닐 때만 시작
+            if (!this.conversation) {
+                await this.startConversation();
+            }
         }
     }
 
@@ -158,11 +162,12 @@ class VoiceWidget {
                     console.log('AI 상담 연결 성공');
                     this.updateUI('connected');
                     this.showConversationLog();
+                    this.hasIncrementedUsage = false; // 연결 시 플래그 초기화
                 },
 
                 onDisconnect: () => {
                     console.log('AI 상담 연결 종료');
-                    this.updateUI('disconnected');
+                    this.handleDisconnect();
                 },
 
                 onMessage: (message) => {
@@ -191,32 +196,59 @@ class VoiceWidget {
         try {
             this.stopTimer();
 
-            if (this.conversation) {
-                await this.conversation.endSession();
+            // 연결이 활성 상태일 때만 종료 시도
+            if (this.conversation && this.isActive) {
+                try {
+                    await this.conversation.endSession();
+                } catch (error) {
+                    // WebSocket이 이미 닫혀있는 경우 무시
+                    console.log('연결이 이미 종료됨:', error.message);
+                }
                 this.conversation = null;
             }
 
             this.isActive = false;
             this.updateUI('disconnected');
-
-            // 사용 횟수 증가
-            this.setUsageCount(this.usageCount + 1);
-            this.updateUsageDisplay();
-
-            // 사용 횟수 도달 시 알림
-            if (this.usageCount >= this.maxUsageCount) {
-                setTimeout(() => {
-                    alert('무료 체험 횟수를 모두 사용하셨습니다.\n\n정식 서비스 이용을 원하시면 병원에 문의해주세요.');
-                }, 500);
-            }
-
-            // 웹훅으로 대화 내용 전송
-            if (this.config.WEBHOOK_URL && this.conversationHistory.length > 0) {
-                this.sendToWebhook();
-            }
+            this.incrementUsageCount();
 
         } catch (error) {
             console.error('대화 종료 오류:', error);
+        }
+    }
+
+    handleDisconnect() {
+        // AI가 자동으로 연결을 종료했을 때
+        // 먼저 상태를 비활성화하여 추가 메시지 전송 방지
+        this.isActive = false;
+        this.conversation = null;
+
+        this.stopTimer();
+        this.updateUI('disconnected');
+        this.incrementUsageCount();
+    }
+
+    incrementUsageCount() {
+        // 중복 차감 방지
+        if (this.hasIncrementedUsage) {
+            return;
+        }
+
+        this.hasIncrementedUsage = true;
+
+        // 사용 횟수 증가
+        this.setUsageCount(this.usageCount + 1);
+        this.updateUsageDisplay();
+
+        // 사용 횟수 도달 시 알림
+        if (this.usageCount >= this.maxUsageCount) {
+            setTimeout(() => {
+                alert('무료 체험 횟수를 모두 사용하셨습니다.\n\n정식 서비스 이용을 원하시면 병원에 문의해주세요.');
+            }, 500);
+        }
+
+        // 웹훅으로 대화 내용 전송
+        if (this.config.WEBHOOK_URL && this.conversationHistory.length > 0) {
+            this.sendToWebhook();
         }
     }
 
@@ -374,6 +406,7 @@ class VoiceWidget {
                 statusIndicator.className = 'status-indicator';
                 micIcon.style.display = 'block';
                 stopIcon.style.display = 'none';
+                document.getElementById('timer-display').style.display = 'none';
                 document.getElementById('conversation-log').style.display = 'none';
                 document.getElementById('conversation-messages').innerHTML = '';
                 this.conversationHistory = [];
