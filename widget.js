@@ -112,6 +112,9 @@ class VoiceWidget {
                         <span id="usage-count" class="usage-count">0/2</span>
                     </div>
                     <small class="powered-by">AI Voice Assistant</small>
+                    <a href="https://tally.so/r/0QeNx9" target="_blank" rel="noopener noreferrer" class="contact-link">
+                        상담 문의
+                    </a>
                 </div>
             </div>
         `;
@@ -139,7 +142,7 @@ class VoiceWidget {
         try {
             // 사용 횟수 체크
             if (!this.canStartConversation()) {
-                alert('⚠️ 무료 체험 횟수를 모두 사용하셨습니다. (2/2)\n\n정식 서비스 이용을 원하시면 병원에 문의해주세요.');
+                alert('⚠️ 무료 체험 횟수를 모두 사용하셨습니다. (2/2)\n\n정식 서비스 이용을 원하시면 하단의 상담 링크를 클릭하세요.');
                 return;
             }
 
@@ -242,7 +245,7 @@ class VoiceWidget {
         // 사용 횟수 도달 시 알림
         if (this.usageCount >= this.maxUsageCount) {
             setTimeout(() => {
-                alert('무료 체험 횟수를 모두 사용하셨습니다.\n\n정식 서비스 이용을 원하시면 병원에 문의해주세요.');
+                alert('무료 체험 횟수를 모두 사용하셨습니다.\n\n정식 서비스 이용을 원하시면 하단의 상담 링크를 클릭하세요.');
             }, 500);
         }
 
