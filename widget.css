@@ -130,6 +130,10 @@
 /* Status Container */
 .status-container {
     margin-top: 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
 }
 
 .voice-widget-status {
@@ -170,6 +174,49 @@
     font-size: 14px;
     color: #4a5568;
     font-weight: 500;
+}
+
+/* Timer Display */
+.timer-display {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: #dbeafe;
+    border-radius: 20px;
+    color: #0369a1;
+    font-weight: 600;
+    font-size: 16px;
+    transition: all 0.3s ease;
+}
+
+.timer-display.warning {
+    background: #fee2e2;
+    color: #dc2626;
+    animation: timerPulse 1s infinite;
+}
+
+@keyframes timerPulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.05);
+        opacity: 0.9;
+    }
+}
+
+.timer-icon {
+    width: 20px;
+    height: 20px;
+    stroke: currentColor;
+}
+
+.timer-text {
+    font-variant-numeric: tabular-nums;
+    min-width: 45px;
+    text-align: center;
 }
 
 /* Conversation Log */

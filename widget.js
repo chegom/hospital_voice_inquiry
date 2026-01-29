@@ -18,6 +18,9 @@ class VoiceWidget {
         this.conversation = null;
         this.isActive = false;
         this.conversationHistory = [];
+        this.timer = null;
+        this.startTime = null;
+        this.maxDuration = 180; // 3분 (초 단위)
 
         this.init();
     }
@@ -54,6 +57,14 @@ class VoiceWidget {
                         <div id="voice-widget-status" class="voice-widget-status">
                             <div class="status-indicator"></div>
                             <span class="status-text">대기 중</span>
+                        </div>
+                        <div id="timer-display" class="timer-display" style="display: none;">
+                            <svg class="timer-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="12" cy="13" r="9" stroke="currentColor" stroke-width="2"/>
+                                <path d="M12 8V13L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                <path d="M9 2H15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                            <span id="timer-text" class="timer-text">3:00</span>
                         </div>
                     </div>
 
@@ -126,6 +137,7 @@ class VoiceWidget {
             });
 
             this.isActive = true;
+            this.startTimer();
 
         } catch (error) {
             console.error('대화 시작 오류:', error);
@@ -136,6 +148,8 @@ class VoiceWidget {
 
     async stopConversation() {
         try {
+            this.stopTimer();
+
             if (this.conversation) {
                 await this.conversation.endSession();
                 this.conversation = null;
@@ -151,6 +165,55 @@ class VoiceWidget {
 
         } catch (error) {
             console.error('대화 종료 오류:', error);
+        }
+    }
+
+    startTimer() {
+        this.startTime = Date.now();
+        const timerDisplay = document.getElementById('timer-display');
+        timerDisplay.style.display = 'flex';
+
+        this.updateTimerDisplay();
+
+        this.timer = setInterval(() => {
+            const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
+            const remaining = this.maxDuration - elapsed;
+
+            if (remaining <= 0) {
+                this.addSystemMessage('⏰ 상담 시간이 종료되었습니다 (3분)');
+                this.stopConversation();
+            } else {
+                this.updateTimerDisplay();
+            }
+        }, 1000);
+    }
+
+    stopTimer() {
+        if (this.timer) {
+            clearInterval(this.timer);
+            this.timer = null;
+        }
+        this.startTime = null;
+        const timerDisplay = document.getElementById('timer-display');
+        timerDisplay.style.display = 'none';
+    }
+
+    updateTimerDisplay() {
+        const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
+        const remaining = this.maxDuration - elapsed;
+
+        const minutes = Math.floor(remaining / 60);
+        const seconds = remaining % 60;
+
+        const timerText = document.getElementById('timer-text');
+        timerText.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+        // 30초 미만일 때 경고 색상
+        const timerDisplay = document.getElementById('timer-display');
+        if (remaining < 30) {
+            timerDisplay.classList.add('warning');
+        } else {
+            timerDisplay.classList.remove('warning');
         }
     }
 
