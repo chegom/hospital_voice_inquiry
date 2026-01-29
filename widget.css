@@ -296,10 +296,44 @@
     background: #f0f9ff;
     text-align: center;
     color: #0891b2;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .voice-widget-footer small {
     font-size: 12px;
+}
+
+.usage-info {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.usage-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 12px;
+    background: #bae6fd;
+    color: #0369a1;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 13px;
+    min-width: 45px;
+}
+
+.usage-count.limit-reached {
+    background: #fecaca;
+    color: #dc2626;
+}
+
+.powered-by {
+    opacity: 0.7;
 }
 
 /* Scrollbar Styling */

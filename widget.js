@@ -21,6 +21,8 @@ class VoiceWidget {
         this.timer = null;
         this.startTime = null;
         this.maxDuration = 180; // 3분 (초 단위)
+        this.maxUsageCount = 2; // 최대 사용 횟수
+        this.usageCount = this.getUsageCount();
 
         this.init();
     }
@@ -28,6 +30,35 @@ class VoiceWidget {
     init() {
         this.createWidget();
         this.attachEventListeners();
+        this.updateUsageDisplay();
+    }
+
+    getUsageCount() {
+        const count = localStorage.getItem('voiceWidgetUsageCount');
+        return count ? parseInt(count, 10) : 0;
+    }
+
+    setUsageCount(count) {
+        localStorage.setItem('voiceWidgetUsageCount', count.toString());
+        this.usageCount = count;
+    }
+
+    updateUsageDisplay() {
+        const usageCountElement = document.getElementById('usage-count');
+        if (usageCountElement) {
+            usageCountElement.textContent = `${this.usageCount}/${this.maxUsageCount}`;
+
+            // 사용 횟수에 따라 색상 변경
+            if (this.usageCount >= this.maxUsageCount) {
+                usageCountElement.classList.add('limit-reached');
+            } else {
+                usageCountElement.classList.remove('limit-reached');
+            }
+        }
+    }
+
+    canStartConversation() {
+        return this.usageCount < this.maxUsageCount;
     }
 
     createWidget() {
@@ -75,7 +106,11 @@ class VoiceWidget {
                 </div>
 
                 <div class="voice-widget-footer">
-                    <small>AI Voice Assistant</small>
+                    <div class="usage-info">
+                        <small>무료 체험</small>
+                        <span id="usage-count" class="usage-count">0/2</span>
+                    </div>
+                    <small class="powered-by">AI Voice Assistant</small>
                 </div>
             </div>
         `;
@@ -98,6 +133,12 @@ class VoiceWidget {
 
     async startConversation() {
         try {
+            // 사용 횟수 체크
+            if (!this.canStartConversation()) {
+                alert('⚠️ 무료 체험 횟수를 모두 사용하셨습니다. (2/2)\n\n정식 서비스 이용을 원하시면 병원에 문의해주세요.');
+                return;
+            }
+
             // Agent ID 확인
             if (!this.config.AGENT_ID || this.config.AGENT_ID === 'YOUR_AGENT_ID_HERE') {
                 alert('⚠️ 에이전트 ID를 설정해주세요.\n\nwidget.js 파일에서 AGENT_ID를 입력하세요.');
@@ -157,6 +198,17 @@ class VoiceWidget {
 
             this.isActive = false;
             this.updateUI('disconnected');
+
+            // 사용 횟수 증가
+            this.setUsageCount(this.usageCount + 1);
+            this.updateUsageDisplay();
+
+            // 사용 횟수 도달 시 알림
+            if (this.usageCount >= this.maxUsageCount) {
+                setTimeout(() => {
+                    alert('무료 체험 횟수를 모두 사용하셨습니다.\n\n정식 서비스 이용을 원하시면 병원에 문의해주세요.');
+                }, 500);
+            }
 
             // 웹훅으로 대화 내용 전송
             if (this.config.WEBHOOK_URL && this.conversationHistory.length > 0) {
