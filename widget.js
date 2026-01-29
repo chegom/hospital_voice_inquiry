@@ -111,10 +111,10 @@ class VoiceWidget {
                         <small>무료 체험</small>
                         <span id="usage-count" class="usage-count">0/2</span>
                     </div>
-                    <small class="powered-by">AI Voice Assistant</small>
                     <a href="https://tally.so/r/0QeNx9" target="_blank" rel="noopener noreferrer" class="contact-link">
                         상담 문의
                     </a>
+                    <small class="powered-by">AI Voice Assistant</small>
                 </div>
             </div>
         `;
