@@ -48,6 +48,21 @@ class VoiceWidget {
     }
 
     updateUsageDisplay() {
+        const usageInfoElement = document.querySelector('.usage-info');
+
+        // 사용 제한이 비활성화된 경우 표시 숨김
+        if (!this.config.ENABLE_USAGE_LIMIT) {
+            if (usageInfoElement) {
+                usageInfoElement.style.display = 'none';
+            }
+            return;
+        }
+
+        // 사용 제한이 활성화된 경우 표시
+        if (usageInfoElement) {
+            usageInfoElement.style.display = 'flex';
+        }
+
         const usageCountElement = document.getElementById('usage-count');
         if (usageCountElement) {
             usageCountElement.textContent = `${this.usageCount}/${this.maxUsageCount}`;
