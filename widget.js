@@ -9,7 +9,10 @@ const CONFIG = {
     AGENT_ID: 'agent_6501kftgxk6ne81sr01rj0f7q5mc',
 
     // 웹훅 URL (선택사항 - 대화 내용 전송)
-    WEBHOOK_URL: ''
+    WEBHOOK_URL: '',
+
+    // 무료 체험 제한 (0: 제한 없음, 1: 제한 있음)
+    ENABLE_USAGE_LIMIT: 0
 };
 
 class VoiceWidget {
@@ -59,6 +62,10 @@ class VoiceWidget {
     }
 
     canStartConversation() {
+        // 사용 제한이 비활성화된 경우 항상 true 반환
+        if (!this.config.ENABLE_USAGE_LIMIT) {
+            return true;
+        }
         return this.usageCount < this.maxUsageCount;
     }
 
@@ -231,6 +238,15 @@ class VoiceWidget {
     }
 
     incrementUsageCount() {
+        // 사용 제한이 비활성화된 경우 횟수 증가하지 않음
+        if (!this.config.ENABLE_USAGE_LIMIT) {
+            // 웹훅으로 대화 내용 전송만 수행
+            if (this.config.WEBHOOK_URL && this.conversationHistory.length > 0) {
+                this.sendToWebhook();
+            }
+            return;
+        }
+
         // 중복 차감 방지
         if (this.hasIncrementedUsage) {
             return;
