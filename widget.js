@@ -12,7 +12,7 @@ const CONFIG = {
     WEBHOOK_URL: '',
 
     // 무료 체험 제한 (0: 제한 없음, 1: 제한 있음)
-    ENABLE_USAGE_LIMIT: 0
+    ENABLE_USAGE_LIMIT: 1
 };
 
 class VoiceWidget {
@@ -24,7 +24,7 @@ class VoiceWidget {
         this.timer = null;
         this.startTime = null;
         this.maxDuration = 180; // 3분 (초 단위)
-        this.maxUsageCount = 2; // 최대 사용 횟수
+        this.maxUsageCount = 3; // 최대 사용 횟수
         this.usageCount = this.getUsageCount();
         this.hasIncrementedUsage = false; // 사용 횟수 증가 플래그
 
@@ -131,7 +131,7 @@ class VoiceWidget {
                 <div class="voice-widget-footer">
                     <div class="usage-info">
                         <small>무료 체험</small>
-                        <span id="usage-count" class="usage-count">0/2</span>
+                        <span id="usage-count" class="usage-count">0/3</span>
                     </div>
                     <a href="https://tally.so/r/0QeNx9" target="_blank" rel="noopener noreferrer" class="contact-link">
                         도입 문의
@@ -164,7 +164,7 @@ class VoiceWidget {
         try {
             // 사용 횟수 체크
             if (!this.canStartConversation()) {
-                alert('⚠️ 무료 체험 횟수를 모두 사용하셨습니다. (2/2)\n\n정식 서비스 이용을 원하시면 하단의 상담 링크를 클릭하세요.');
+                alert('⚠️ 무료 체험 횟수를 모두 사용하셨습니다. (3/3)\n\n정식 서비스 이용을 원하시면 하단의 상담 링크를 클릭하세요.');
                 return;
             }
 
