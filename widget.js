@@ -12,7 +12,7 @@ const CONFIG = {
     WEBHOOK_URL: 'https://kittai.app.n8n.cloud/webhook/4a12f1f0-eee6-4e41-8045-5abf04196ee6',
 
     // 무료 체험 제한 (0: 제한 없음, 1: 제한 있음)
-    ENABLE_USAGE_LIMIT: 1
+    ENABLE_USAGE_LIMIT: 0
 };
 
 class VoiceWidget {
